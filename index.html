@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Facturas Firebase</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --success: #10b981;
+            --success-dark: #059669;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 15px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+            margin-top: 10px;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-dark);
+        }
+
+        .btn-delete {
+            background-color: var(--danger);
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            width: auto;
+            display: inline-block;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-dark);
+        }
+
+        #preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            margin-top: 10px;
+            display: none;
+            border-radius: 8px;
+            border: 2px dashed var(--border);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f1f5f9;
+        }
+
+        .img-thumb {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .nav-mode {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .nav-mode button {
+            width: 48%;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .filename-text {
+            font-size: 0.75rem;
+            color: #64748b;
+            word-break: break-all;
+        }
+
+        .loading-text {
+            display: none;
+            text-align: center;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .error-text {
+            display: none;
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .btn-logout {
+            background-color: var(--danger);
+            width: auto;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+        }
+
+        .btn-logout:hover {
+            background-color: var(--danger-dark);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Control de Facturas Multi-Usuario</h1>
+    </header>
+
+    <div class="nav-mode">
+        <button onclick="switchView('user')">Modo Usuario</button>
+        <button class="btn-secondary" onclick="switchView('admin')">Modo Admin</button>
+    </div>
+
+    <div id="user-view" class="card">
+        <h2>Subir Nueva Factura</h2>
+        <div id="loading-msg" class="loading-text">Subiendo factura e imagen a Firebase... Por favor, espera.</div>
+        <form id="invoice-form" onsubmit="return false;">
+            <div class="form-group">
+                <label for="user-id">ID de Usuario (1-100):</label>
+                <input type="number" id="user-id" min="1" max="100" required placeholder="Ej. 45">
+            </div>
+
+            <div class="form-group">
+                <label for="establishment">Establecimiento:</label>
+                <select id="establishment" required>
+                    <optgroup label="Gasolineras">
+                        <option value="Gasolinera Repsol">Gasolinera Repsol</option>
+                        <option value="Gasolinera Cepsa">Gasolinera Cepsa</option>
+                        <option value="Gasolinera BP">Gasolinera BP</option>
+                    </optgroup>
+                    <optgroup label="Ferreterías">
+                        <option value="Ferretería El Tornillo">Ferretería El Tornillo</option>
+                        <option value="Ferretería Industrial">Ferretería Industrial</option>
+                        <option value="Ferretería Central">Ferretería Central</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Importe (€):</label>
+                <input type="number" id="amount" step="0.01" required placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label for="camera-input">Capturar Factura (Foto):</label>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" required>
+                <img id="preview" alt="Vista previa">
+            </div>
+
+            <button type="button" id="btn-submit" onclick="procesarEnvio()">Enviar Factura</button>
+        </form>
+    </div>
+
+    <div id="admin-view" class="card hidden">
+
+        <div id="admin-login" class="admin-login">
+            <h2>Acceso Administrador</h2>
+            <div class="form-group">
+                <label for="admin-email">Email:</label>
+                <input type="email" id="admin-email" placeholder="admin@ejemplo.com" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="admin-password">Contraseña:</label>
+                <input type="password" id="admin-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div id="login-error" class="error-text">Email o contraseña incorrectos.</div>
+            <button type="button" id="btn-login" onclick="loginAdmin()">Iniciar sesión</button>
+        </div>
+
+        <div id="admin-panel" class="hidden">
+            <div class="admin-header">
+                <h2>Panel de Administración</h2>
+                <button class="btn-logout" onclick="logoutAdmin()">Cerrar sesión</button>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="filter-user">Filtrar por Usuario:</label>
+                <input type="number" id="filter-user" placeholder="Todos los usuarios" oninput="renderAdminTable()">
+            </div>
+
+            <button class="btn-success" onclick="exportarCSV()">📥 Exportar Datos a CSV (Excel)</button>
+
+            <div class="table-responsive">
+                <table id="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>User</th>
+                            <th>Lugar</th>
+                            <th>Importe</th>
+                            <th>Nombre Archivo</th>
+                            <th>Foto</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        // ⚠️ REEMPLAZA ESTO CON TUS CREDENCIALES DE LA CONSOLA DE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQjLRAIBYZrZa8f1frzrGfPE-rn9bz9SU",
+            authDomain: "facturas-distrito-xiv.firebaseapp.com",
+            projectId: "facturas-distrito-xiv",
+            storageBucket: "facturas-distrito-xiv.firebasestorage.app",
+            messagingSenderId: "994344564575",
+            appId: "1:994344564575:web:77c359420b39a4499f68ea",
+            measurementId: "G-QQDEJ6T3QY"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        let listaFacturas = []; // Caché local para administración y exportación CSV
+        let archivoSeleccionado = null;
+        let isAdminAuthenticated = false;
+
+        // Firebase Auth es la fuente de verdad de si hay sesión de admin activa.
+        // Las Firestore/Storage Security Rules son las que realmente bloquean el
+        // acceso; esto solo controla qué se muestra en la interfaz.
+        onAuthStateChanged(auth, (user) => {
+            isAdminAuthenticated = !!user;
+            const loginBox = document.getElementById('admin-login');
+            const panelBox = document.getElementById('admin-panel');
+            if (isAdminAuthenticated) {
+                loginBox.classList.add('hidden');
+                panelBox.classList.remove('hidden');
+                cargarDatosFirebase();
+            } else {
+                loginBox.classList.remove('hidden');
+                panelBox.classList.add('hidden');
+            }
+        });
+
+        window.loginAdmin = async function () {
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const errorMsg = document.getElementById('login-error');
+            errorMsg.style.display = 'none';
+
+            if (!email || !password) {
+                errorMsg.textContent = 'Introduce email y contraseña.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                document.getElementById('admin-password').value = '';
+            } catch (error) {
+                errorMsg.textContent = 'Email o contraseña incorrectos.';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        window.logoutAdmin = async function () {
+            await signOut(auth);
+            switchView('user');
+        }
+
+        // Escuchar la cámara
+        document.getElementById('camera-input').addEventListener('change', function (e) {
+            archivoSeleccionado = e.target.files[0];
+            if (archivoSeleccionado) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const imgPreview = document.getElementById('preview');
+                    imgPreview.src = event.target.result;
+                    imgPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(archivoSeleccionado);
+            }
+        });
+
+        function generarNombreArchivo(userId) {
+            const ahora = new Date();
+            return `factura_user${userId}_${ahora.getFullYear()}${String(ahora.getMonth() + 1).padStart(2, '0')}${String(ahora.getDate()).padStart(2, '0')}_${String(ahora.getHours()).padStart(2, '0')}${String(ahora.getMinutes()).padStart(2, '0')}${String(ahora.getSeconds()).padStart(2, '0')}.jpg`;
+        }
+
+        // Enviar datos distribuidos a Firestore y Storage
+        window.procesarEnvio = async function () {
+            const userId = document.getElementById('user-id').value;
+            const establishment = document.getElementById('establishment').value;
+            const amount = document.getElementById('amount').value;
+            const date = new Date().toLocaleString();
+
+            if (!userId || userId < 1 || userId > 100 || !amount || amount <= 0 || !archivoSeleccionado) {
+                alert("Por favor, rellene todos los campos y tome la foto.");
+                return;
+            }
+
+            if (!archivoSeleccionado.type.startsWith('image/')) {
+                alert("El archivo debe ser una imagen.");
+                return;
+            }
+
+            const MAX_SIZE = 10 * 1024 * 1024; // 10 MB, debe coincidir con las Storage Rules
+            if (archivoSeleccionado.size > MAX_SIZE) {
+                alert("La imagen es demasiado grande (máximo 10 MB).");
+                return;
+            }
+
+            // Bloquear interfaz para evitar doble envío en conexiones lentas móviles
+            document.getElementById('btn-submit').disabled = true;
+            document.getElementById('loading-msg').style.display = 'block';
+
+            try {
+                const nombreArchivoUnico = generarNombreArchivo(userId);
+
+                // 1. Subir binario real a Firebase Storage
+                const storageRef = ref(storage, 'facturas/' + nombreArchivoUnico);
+                const snapshot = await uploadBytes(storageRef, archivoSeleccionado);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                // 2. Guardar metadata estructurada en Cloud Firestore
+                await addDoc(collection(db, "facturas"), {
+                    userId: userId,
+                    establishment: establishment,
+                    amount: amount,
+                    date: date,
+                    filename: nombreArchivoUnico,
+                    imageUrl: downloadURL // Enlace público directo de la imagen
+                });
+
+                alert('¡La factura se ha registrado correctamente en la nube!');
+
+                // Reset e inicialización limpia
+                document.getElementById('invoice-form').reset();
+                document.getElementById('camera-input').value = "";
+                document.getElementById('preview').style.display = 'none';
+                document.getElementById('preview').src = "";
+                archivoSeleccionado = null;
+
+                switchView('user');
+            } catch (error) {
+                console.error("Error al subir datos: ", error);
+                alert("Hubo un error al guardar los datos en Firebase.");
+            } finally {
+                document.getElementById('btn-submit').disabled = false;
+                document.getElementById('loading-msg').style.display = 'none';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Alternar vistas. La carga de datos de admin la dispara onAuthStateChanged
+        // una vez hay sesión real, no el simple hecho de pulsar el botón.
+        window.switchView = function (mode) {
+            if (mode === 'user') {
+                document.getElementById('user-view').classList.remove('hidden');
+                document.getElementById('admin-view').classList.add('hidden');
+            } else {
+                document.getElementById('user-view').classList.add('hidden');
+                document.getElementById('admin-view').classList.remove('hidden');
+            }
+        }
+
+        // Descargar colección desde Firebase
+        async function cargarDatosFirebase() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = "<tr><td colspan='7'>Cargando datos desde Firebase...</td></tr>";
+            listaFacturas = [];
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "facturas"));
+                querySnapshot.forEach((doc) => {
+                    listaFacturas.push({ idFirebase: doc.id, ...doc.data() });
+                });
+                renderAdminTable();
+            } catch (error) {
+                alert("Error al leer datos desde Firebase.");
+            }
+        }
+
+        window.renderAdminTable = function () {
+            const tbody = document.getElementById('table-body');
+            const filterUser = document.getElementById('filter-user').value;
+            tbody.innerHTML = "";
+
+            const filteredDb = filterUser
+                ? listaFacturas.filter(item => item.userId === filterUser)
+                : listaFacturas;
+
+            if (filteredDb.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='7'>No hay registros.</td></tr>";
+                return;
+            }
+
+            filteredDb.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date.split(' ')[0]}</td>
+                    <td><strong>${item.userId}</strong></td>
+                    <td>${item.establishment}</td>
+                    <td>${item.amount} €</td>
+                    <td class="filename-text">${item.filename}</td>
+                    <td>
+                        <img src="${item.imageUrl}" class="img-thumb" onclick="window.open('${item.imageUrl}')">
+                    </td>
+                    <td>
+                        <button class="btn-delete" id="btn-del-${item.idFirebase}">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Asignar evento de borrado dinámico (Borra tanto Firestore como Storage)
+                document.getElementById(`btn-del-${item.idFirebase}`).addEventListener('click', () => deleteInvoice(item));
+            });
+        }
+
+        // Eliminar registros de forma síncrona en Firestore y Storage
+        async function deleteInvoice(item) {
+            if (!isAdminAuthenticated) return;
+            if (confirm(`¿Estás seguro de eliminar la factura del usuario ${item.userId}?`)) {
+                try {
+                    // 1. Eliminar archivo de Storage
+                    const fileRef = ref(storage, 'facturas/' + item.filename);
+                    await deleteObject(fileRef).catch(e => console.log("El archivo físico no existía o ya fue borrado"));
+
+                    // 2. Eliminar documento de Firestore
+                    await deleteDoc(doc(db, "facturas", item.idFirebase));
+
+                    alert("Registro eliminado con éxito.");
+                    await cargarDatosFirebase();
+                } catch (error) {
+                    alert("Error al eliminar el registro.");
+                }
+            }
+        }
+
+        window.exportarCSV = function () {
+            if (listaFacturas.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "Fecha Registro;ID Usuario;Establecimiento;Importe (€);Nombre Archivo Unico;Url Foto\r\n";
+
+            listaFacturas.forEach(item => {
+                const fila = [item.date, item.userId, item.establishment, item.amount, item.filename, item.imageUrl];
+                csvContent += fila.join(";") + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `reporte_firebase_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+
+</html>
