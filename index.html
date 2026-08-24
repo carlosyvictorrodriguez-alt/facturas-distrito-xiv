@@ -245,8 +245,27 @@
         <div id="loading-msg" class="loading-text">Subiendo factura e imagen a Firebase... Por favor, espera.</div>
         <form id="invoice-form" onsubmit="return false;">
             <div class="form-group">
-                <label for="user-id">ID de Usuario (1-100):</label>
-                <input type="number" id="user-id" min="1" max="100" required placeholder="Ej. 45">
+                <label for="user-id">Ubicación / Identificador:</label>
+                <select id="user-id" required>
+                    <option value="" disabled selected>Seleccione una opción...</option>
+                    <option value="MATAMÁ">MATAMÁ</option>
+                    <option value="XIRONDA">XIRONDA</option>
+                    <option value="INFESTA">INFESTA</option>
+                    <option value="VENTAS">VENTAS</option>
+                    <option value="PAZOS">PAZOS</option>
+                    <option value="VILAMAIOR">VILAMAIOR</option>
+                    <option value="BARXA">BARXA</option>
+                    <option value="CANDA">CANDA</option>
+                    <option value="PINZA">PINZA</option>
+                    <option value="LORTA">LORTA</option>
+                    <option value="TORO">TORO</option>
+                    <option value="PEPÍN">PEPÍN</option>
+                    <option value="ROSAL">ROSAL</option>
+                    <option value="MOURISCA">MOURISCA</option>
+                    <option value="VILASECO">VILASECO</option>
+                    <option value="BOUZA">BOUZA</option>
+                    <option value="PONTÓN">PONTÓN</option>
+                </select>
             </div>
 
             <div class="form-group">
